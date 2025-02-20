@@ -41,6 +41,7 @@ import { IconPlus, IconSearch, IconMinus, IconX } from '@tabler/icons-react'
 import LlamaindexPNG from '@/assets/images/llamaindex.png'
 import LangChainPNG from '@/assets/images/langchain.png'
 import utilNodesPNG from '@/assets/images/utilNodes.png'
+import ElizaPNG from '@/assets/images/elizaos-icon.png'
 
 // const
 import { baseURL } from '@/store/constant'
@@ -155,11 +156,14 @@ const AddNodes = ({ nodesData, node, isAgentCanvas }) => {
     const groupByTags = (nodes, newTabValue = 0) => {
         const langchainNodes = nodes.filter((nd) => !nd.tags)
         const llmaindexNodes = nodes.filter((nd) => nd.tags && nd.tags.includes('LlamaIndex'))
+        const elizaNodes = nodes.filter((nd) => nd.tags && nd.tags.includes('Eliza'))
         const utilitiesNodes = nodes.filter((nd) => nd.tags && nd.tags.includes('Utilities'))
         if (newTabValue === 0) {
             return langchainNodes
         } else if (newTabValue === 1) {
             return llmaindexNodes
+        } else if (newTabValue === 2) {
+            return elizaNodes
         } else {
             return utilitiesNodes
         }
@@ -250,6 +254,8 @@ const AddNodes = ({ nodesData, node, isAgentCanvas }) => {
             return LangChainPNG
         } else if (tabValue === 1) {
             return LlamaindexPNG
+        } else if (tabValue === 2) {
+            return ElizaPNG
         } else {
             return utilNodesPNG
         }
@@ -365,7 +371,7 @@ const AddNodes = ({ nodesData, node, isAgentCanvas }) => {
                                                 onChange={handleTabChange}
                                                 aria-label='tabs'
                                             >
-                                                {['LangChain', 'LlamaIndex', 'Utilities'].map((item, index) => (
+                                                {['LangChain', 'LlamaIndex', 'Eliza', 'Utilities'].map((item, index) => (
                                                     <Tab
                                                         icon={
                                                             <div
@@ -532,9 +538,9 @@ const AddNodes = ({ nodesData, node, isAgentCanvas }) => {
                                                                                                             background:
                                                                                                                 node.badge === 'DEPRECATING'
                                                                                                                     ? theme.palette.warning
-                                                                                                                          .main
+                                                                                                                        .main
                                                                                                                     : theme.palette.teal
-                                                                                                                          .main,
+                                                                                                                        .main,
                                                                                                             color:
                                                                                                                 node.badge !== 'DEPRECATING'
                                                                                                                     ? 'white'
