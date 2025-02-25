@@ -1,0 +1,43 @@
+{
+    "name": "@elizaos-plugins/plugin-b2",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "dependencies": {
+        "@elizaos/core": "^0.25.6",
+        "tsup": "8.3.5",
+        "viem": "^2.23.5"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "1.5.3",
+        "tsup": "^8.3.5",
+        "typescript": "^5.7.3"
+    },
+    "scripts": {
+        "build": "tsup --format esm --dts",
+        "dev": "tsup --format esm --dts --watch",
+        "lint": "biome check src/",
+        "lint:fix": "biome check --apply src/",
+        "format": "biome format src/",
+        "format:fix": "biome format --write src/",
+        "check": "biome check --apply ."
+    },
+    "peerDependencies": {
+        "whatwg-url": "7.1.0"
+    },
+    "agentConfig": {
+        "pluginType": "elizaos:plugin:1.0.0",
+        "pluginParameters": {
+            "B2_PRIVATE_KEY": {
+                "type": "string",
+                "description": "private key for the EOA"
+            }
+        }
+    },
+    "packageManager": "pnpm@9.15.3+sha512.1f79bc245a66eb0b07c5d4d83131240774642caaa86ef7d0434ab47c0d16f66b04e21e0c086eb61e62c77efc4d7f7ec071afad3796af64892fae66509173893a"
+}
