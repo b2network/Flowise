@@ -22,18 +22,23 @@ export const sendNativeAsset = async (
     recipient: Address,
     amount: number
 ) => {
-    const decimals = await walletProvider.getDecimals(TOKEN_ADDRESSES["B2-BTC"]);
-    const walletClient = walletProvider.getWalletClient();
-
-    const args = {
-        account: walletProvider.getAddress(),
-        to: recipient,
-        value: parseUnits(amount.toString(), decimals),
-        kzg: undefined,
-        chain: b2Network
-    };
-    const tx = await walletClient.sendTransaction(args);
-    return tx as Hash;
+    try {
+        const decimals = await walletProvider.getDecimals(TOKEN_ADDRESSES["B2-BTC"]);
+        const walletClient = walletProvider.getWalletClient();
+        const args = {
+            account: walletProvider.getAccount(),
+            to: recipient,
+            value: parseUnits(amount.toString(), decimals),
+            kzg: undefined,
+            chain: b2Network
+        };
+        const tx = await walletClient.sendTransaction(args);
+        return tx as Hash;
+    } catch(error) {
+        elizaLogger.error("Error simulating contract:", error);
+        // return error;
+        throw error;
+    }
 };
 
 export const sendToken = async (
@@ -89,7 +94,7 @@ export const sendToken = async (
         return tx as Hash;
     } catch (error) {
         elizaLogger.error("Error simulating contract:", error);
-        return;
+        return error;
     }
 };
 
@@ -178,7 +183,7 @@ export const depositBTC = async (
         });
 
         const args = {
-            account: walletProvider.getAddress(),
+            account: walletProvider.getAccount(),
             to: farmAddress,
             data,
             value: parseUnits(amount.toString(), decimals),

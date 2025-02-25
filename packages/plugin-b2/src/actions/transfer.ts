@@ -21,9 +21,9 @@ import { TOKEN_ADDRESSES } from "../utils/constants"
 // Exported for tests
 export class TransferAction {
 
-    constructor(private walletProvider: WalletProvider) { }
+    constructor(private walletProvider: WalletProvider) {}
 
-    async transfer(params: TransferParams): Promise<Transaction> {
+    async transfer(params: TransferParams): Promise<any> {
         try {
             let txHash: Hash;
             if (params.tokenAddress === TOKEN_ADDRESSES["B2-BTC"]) {
@@ -47,9 +47,10 @@ export class TransferAction {
                 recipient: params.recipient,
                 amount: params.amount,
             };
-        } catch (error) {
+        } catch(error) {
             elizaLogger.error(`Transfer failed: ${error.message}`);
-            throw new Error(`Transfer failed: ${error.message}`);
+            // throw new Error(`Transfer failed: ${error.message}`);
+            return `Transfer failed: ${error.message}`;
         }
     }
 
@@ -103,8 +104,7 @@ export const transferAction: Action = {
         _options: { [key: string]: unknown },
         callback?: HandlerCallback
     ) => {
-        elizaLogger.info("Starting SEND_TOKEN handler...");
-        console.log("Starting SEND_TOKEN handler...")
+        elizaLogger.debug("Starting SEND_TOKEN handler...");
 
         // Initialize or update state
         if (!state) {
@@ -113,7 +113,7 @@ export const transferAction: Action = {
             state = await runtime.updateRecentMessageState(state);
         }
 
-        elizaLogger.info("Transfer action handler called");
+        elizaLogger.debug("Transfer action handler called");
         const walletProvider = await initWalletProvider(runtime);
         const action = new TransferAction(walletProvider);
 
@@ -122,9 +122,8 @@ export const transferAction: Action = {
             state,
             runtime,
         );
-        elizaLogger.info("Transfer message:", message);
 
-        elizaLogger.info("Transfer paramOptions:", paramOptions);
+        elizaLogger.debug("Transfer paramOptions:", paramOptions);
 
         const tx = await action.transfer(paramOptions);
         if (tx) {

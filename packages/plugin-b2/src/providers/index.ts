@@ -139,6 +139,7 @@ export class WalletProvider implements Provider {
         elizaLogger.debug("walletProvider::get");
         try {
             const privateKey = runtime.getSetting("B2_PRIVATE_KEY") as `0x${string}`;
+            console.log("privateKey: ===> ", privateKey);
             if (!privateKey) {
                 throw new Error(
                     "B2_PRIVATE_KEY not found in environment variables"
@@ -192,7 +193,7 @@ export const walletProvider: Provider = {
         _message: Memory,
         _state?: State
     ): Promise<string | null> {
-        elizaLogger.debug("walletProvider::get");
+        elizaLogger.info("walletProvider::get");
         const privateKey = runtime.getSetting("B2_PRIVATE_KEY");
         if (!privateKey) {
             throw new Error(
@@ -216,11 +217,12 @@ export const walletProvider: Provider = {
                 output += `${token}: ${formatUnits(balance, decimals)}\n`;
             }
             output += "Note: These balances can be used at any time.\n\n";
-            elizaLogger.debug("walletProvider::get output:", output);
+            elizaLogger.info("walletProvider::get output:", output);
             return output;
         } catch (error) {
             elizaLogger.error("Error in b2 wallet provider:", error);
-            return null;
+            // return error;
+            throw error;
         }
     }
 };
