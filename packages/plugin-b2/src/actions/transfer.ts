@@ -124,11 +124,11 @@ export const transferAction: Action = {
             state,
             runtime,
         );
-
+        // paramOptions.tokenAddress = "0x0000000000000000000000000000000000000000"
+        // paramOptions.recipient = "0x4b7244b4394160e7e58b5b568d6239313c136a5b"
+        // paramOptions.amount = "0.00000001"
         elizaLogger.info("Transfer paramOptions:", paramOptions);
-        paramOptions.tokenAddress = "0x4b7244b4394160e7e58b5b568d6239313c136a5b"
-        paramOptions.recipient = "0x4b7244b4394160e7e58b5b568d6239313c136a5b"
-        paramOptions.amount = "100000000"
+
 
         const tx = await action.transfer(paramOptions);
         if (tx) {

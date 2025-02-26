@@ -1,4 +1,4 @@
-import { flatten } from 'lodash'
+// import { flatten } from 'lodash'
 import { getBaseClasses } from '../../../../src/utils'
 import { AgentExecutor, ToolCallingAgentOutputParser } from '../../../../src/agents'
 // import { zerionPlugin } from "@elizaos-plugins/plugin-zerion"
@@ -22,12 +22,9 @@ import {
     validateCharacterConfig,
 } from "@elizaos/core";
 import fs from "fs";
-import net from "net";
-import os from "os";
 import path from "path";
 import type { Address } from "viem";
-import { defaultCharacter } from "./defaultCharacter";
-// import { vi } from "vitest";
+// import { defaultCharacter } from "./defaultCharacter";
 import {
     FlowiseMemory,
     ICommonObject,
@@ -38,8 +35,6 @@ import {
     IServerSideEventStreamer,
     IUsedTool
 } from '../../../../src/Interface'
-import { RUNTIME } from 'cohere-ai/core';
-import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 
 function mockResolvedValue(value: any) {
     const mockFn = (...args: any[]) => {
@@ -320,9 +315,17 @@ class B2PluginFunctionAgent_Eliza_Agents implements INode {
 
         // await runtime.evaluate(memory, state);
         if (b2Plugin.actions) {
-            await b2Plugin.actions[0].handler(runtime, memory, state)
+            await b2Plugin.actions[0].handler(
+                runtime,
+                memory,
+                state,
+                {},
+                async (newMessages) => {
+                    message = newMessages;
+                    return [memory];
+                })
         }
-        return `plugin name: ${b2Plugin.name}`
+        return `plugin name: ${b2Plugin.name}: msg: ${JSON.stringify(message, null, 2)}`
     }
 }
 
