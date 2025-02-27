@@ -3,23 +3,28 @@ import { getBaseClasses } from '../../../../src/utils'
 import { AgentExecutor, ToolCallingAgentOutputParser } from '../../../../src/agents'
 // import { zerionPlugin } from "@elizaos-plugins/plugin-zerion"
 import { b2Plugin } from "@elizaos-plugins/plugin-b2"
+import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
 import { AgentRuntime } from "@elizaos/core";
 import { sha1 } from "js-sha1";
 import {
-    type IDatabaseAdapter,
+    IDatabaseAdapter,
     ModelProviderName,
+    IAgentRuntime,
     type Action,
     type Memory,
     type State,
     type UUID,
     type Content,
     type Character,
+    type ClientInstance,
     composeContext,
     generateMessageResponse,
     ModelClass,
     getEmbeddingZeroVector,
     settings,
     validateCharacterConfig,
+    CacheManager,
+    DbCacheAdapter,
 } from "@elizaos/core";
 import fs from "fs";
 import path from "path";
@@ -35,6 +40,7 @@ import {
     IServerSideEventStreamer,
     IUsedTool
 } from '../../../../src/Interface'
+// import { startAgent } from "@elizaos/agent"
 
 function mockResolvedValue(value: any) {
     const mockFn = (...args: any[]) => {
@@ -172,6 +178,7 @@ class B2PluginFunctionAgent_Eliza_Agents implements INode {
         // });
         let characters = await loadCharacter("")
 
+        // const runtime = await startAgent(characters)
         const character = characters
         character.id ??= stringToUuid(character.name);
         character.username ??= character.name;
@@ -185,10 +192,21 @@ class B2PluginFunctionAgent_Eliza_Agents implements INode {
             character,
             token
         );
-        runtime.databaseAdapter = mockDatabaseAdapter
-        runtime.cacheManager = mockCacheManager
-        console.log("----createAgent end------")
+        const sqliteAdapterPlugin = await import('@elizaos-plugins/adapter-sqlite');
+        const sqliteAdapterPluginDefault = sqliteAdapterPlugin.default;
+        let adapter = sqliteAdapterPluginDefault.adapters ? sqliteAdapterPluginDefault.adapters[0] : undefined;
+        if (!adapter) {
+            throw new Error("Internal error: No database adapter found for default adapter-sqlite");
+        }
+        const db = adapter?.init(runtime);
+        const cache = new CacheManager(new DbCacheAdapter(db, character.id));
+        runtime.databaseAdapter = db;
+        runtime.cacheManager = cache;
+        await runtime.initialize();
 
+        // start assigned clients
+        runtime.clients = await initializeClients(character, runtime);
+        console.log("----createAgent end------")
 
         console.log(`plugin name: ${b2Plugin.name}`)
         // const message: Memory = {
@@ -486,7 +504,7 @@ export async function createAgent(
         character,
         // character.plugins are handled when clients are added
         plugins: [
-            b2Plugin,
+            bootstrapPlugin,
         ]
             .flat()
             .filter(Boolean),
@@ -855,5 +873,30 @@ async function loadCharacterTryPath(characterPath: string): Promise<Character> {
         throw new Error(`Error parsing character from ${resolvedPath}: ${e}`);
     }
 }
+// also adds plugins from character file into the runtime
+export async function initializeClients(
+    character: Character,
+    runtime: IAgentRuntime
+) {
+    // each client can only register once
+    // and if we want two we can explicitly support it
+    const clients: ClientInstance[] = [];
+    // const clientTypes = clients.map((c) => c.name);
+    // elizaLogger.log("initializeClients", clientTypes, "for", character.name);
+
+    if (character.plugins?.length > 0) {
+        for (const plugin of character.plugins) {
+            if (plugin.clients) {
+                for (const client of plugin.clients) {
+                    const startedClient = await client.start(runtime);
+                    clients.push(startedClient);
+                }
+            }
+        }
+    }
+
+    return clients;
+}
+
 
 module.exports = { nodeClass: B2PluginFunctionAgent_Eliza_Agents }
