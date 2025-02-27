@@ -7,7 +7,11 @@ import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
 import { AgentRuntime } from "@elizaos/core";
 import { sha1 } from "js-sha1";
 import {
+    type Adapter,
+    CacheStore,
     IDatabaseAdapter,
+    FsCacheAdapter,
+    IDatabaseCacheAdapter,
     ModelProviderName,
     IAgentRuntime,
     type Action,
@@ -176,7 +180,7 @@ class B2PluginFunctionAgent_Eliza_Agents implements INode {
         //         .filter(Boolean),
         //     modelProvider: ModelProviderName.OPENAI,
         // });
-        let characters = await loadCharacter("")
+        let characters = await loadCharacter("/Users/m/Workspaces/b2-network/eliza/characters/b2.character.json")
 
         // const runtime = await startAgent(characters)
         const character = characters
@@ -192,20 +196,27 @@ class B2PluginFunctionAgent_Eliza_Agents implements INode {
             character,
             token
         );
-        const sqliteAdapterPlugin = await import('@elizaos-plugins/adapter-sqlite');
-        const sqliteAdapterPluginDefault = sqliteAdapterPlugin.default;
-        let adapter = sqliteAdapterPluginDefault.adapters ? sqliteAdapterPluginDefault.adapters[0] : undefined;
-        if (!adapter) {
-            throw new Error("Internal error: No database adapter found for default adapter-sqlite");
-        }
-        const db = adapter?.init(runtime);
-        const cache = new CacheManager(new DbCacheAdapter(db, character.id));
+        let db: IDatabaseAdapter & IDatabaseCacheAdapter;
+        // initialize database
+        // find a db from the plugins
+        db = await findDatabaseAdapter(runtime);
         runtime.databaseAdapter = db;
+
+         // initialize cache
+        const cache = initializeCache(
+            process.env.CACHE_STORE ?? CacheStore.DATABASE,
+            character,
+            process.env.CACHE_DIR ?? "",
+            db
+        ); // "" should be replaced with dir for file system caching. THOUGHTS: might probably make this into an env
         runtime.cacheManager = cache;
+
+        // start services/plugins/process knowledge
         await runtime.initialize();
 
         // start assigned clients
         runtime.clients = await initializeClients(character, runtime);
+
         console.log("----createAgent end------")
 
         console.log(`plugin name: ${b2Plugin.name}`)
@@ -898,5 +909,101 @@ export async function initializeClients(
     return clients;
 }
 
+
+async function findDatabaseAdapter(runtime: AgentRuntime) {
+    const { adapters } = runtime;
+    let adapter: Adapter | undefined;
+    // if not found, default to sqlite
+    if (adapters.length === 0) {
+        const sqliteAdapterPlugin = await import('@elizaos-plugins/adapter-sqlite');
+        const sqliteAdapterPluginDefault = sqliteAdapterPlugin.default;
+        if (!sqliteAdapterPluginDefault ||  !sqliteAdapterPluginDefault.adapters || sqliteAdapterPluginDefault.adapters.length == 0 ) {
+            throw new Error("Internal error: invalid plugin adapters");
+        }
+        adapter = sqliteAdapterPluginDefault.adapters[0];
+        if (!adapter) {
+            throw new Error("Internal error: No database adapter found for default adapter-sqlite");
+        }
+    } else if (adapters.length === 1) {
+        adapter = adapters[0];
+    } else {
+        throw new Error("Multiple database adapters found. You must have no more than one. Adjust your plugins configuration.");
+        }
+    const adapterInterface = adapter?.init(runtime);
+    return adapterInterface;
+}
+
+
+function initializeCache(
+    cacheStore: string,
+    character: Character,
+    baseDir?: string,
+    db?: IDatabaseCacheAdapter
+) {
+    switch (cacheStore) {
+        // case CacheStore.REDIS:
+        //     if (process.env.REDIS_URL) {
+        //         elizaLogger.info("Connecting to Redis...");
+        //         const redisClient = new RedisClient(process.env.REDIS_URL);
+        //         if (!character?.id) {
+        //             throw new Error(
+        //                 "CacheStore.REDIS requires id to be set in character definition"
+        //             );
+        //         }
+        //         return new CacheManager(
+        //             new DbCacheAdapter(redisClient, character.id) // Using DbCacheAdapter since RedisClient also implements IDatabaseCacheAdapter
+        //         );
+        //     } else {
+        //         throw new Error("REDIS_URL environment variable is not set.");
+        //     }
+
+        case CacheStore.DATABASE:
+            if (db) {
+                // elizaLogger.info("Using Database Cache...");
+                return initializeDbCache(character, db);
+            } else {
+                throw new Error(
+                    "Database adapter is not provided for CacheStore.Database."
+                );
+            }
+
+        case CacheStore.FILESYSTEM:
+            // elizaLogger.info("Using File System Cache...");
+            if (!baseDir) {
+                throw new Error(
+                    "baseDir must be provided for CacheStore.FILESYSTEM."
+                );
+            }
+            return initializeFsCache(baseDir, character);
+
+        default:
+            throw new Error(
+                `Invalid cache store: ${cacheStore} or required configuration missing.`
+            );
+    }
+}
+
+function initializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
+    if (!character?.id) {
+        throw new Error(
+            "initializeFsCache requires id to be set in character definition"
+        );
+    }
+    const cache = new CacheManager(new DbCacheAdapter(db, character.id));
+    return cache;
+}
+
+
+function initializeFsCache(baseDir: string, character: Character) {
+    if (!character?.id) {
+        throw new Error(
+            "initializeFsCache requires id to be set in character definition"
+        );
+    }
+    const cacheDir = path.resolve(baseDir, character.id, "cache");
+
+    const cache = new CacheManager(new FsCacheAdapter(cacheDir));
+    return cache;
+}
 
 module.exports = { nodeClass: B2PluginFunctionAgent_Eliza_Agents }

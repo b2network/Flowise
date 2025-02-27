@@ -70,7 +70,7 @@
         "@upstash/vector": "1.1.5",
         "@zilliz/milvus2-sdk-node": "^2.2.24",
         "@elizaos-plugins/plugin-zerion": "github:elizaos-plugins/plugin-zerion",
-        "@elizaos-plugins/adapter-sqlite": "github:elizaos-plugins/adapter-sqlite",
+        "@elizaos-plugins/adapter-sqlite": "workspace:^",
         "@elizaos-plugins/plugin-b2": "workspace:^",
         "@elizaos/plugin-bootstrap": "0.25.8",
         "@elizaos/core": "0.25.8",
