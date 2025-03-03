@@ -209,7 +209,7 @@ class B2PluginFunctionAgent_Eliza_Agents implements INode {
                 memory,
                 state,
                 {},
-                async (newMessages) => {
+                async (newMessages: Content | null) => {
                     message = newMessages;
                     return [memory];
                 })
