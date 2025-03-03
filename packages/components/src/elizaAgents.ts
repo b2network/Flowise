@@ -587,7 +587,8 @@ export async function findDatabaseAdapter(runtime: AgentRuntime) {
     let adapter: Adapter | undefined;
     // if not found, default to sqlite
     if (adapters.length === 0) {
-        const sqliteAdapterPlugin = await import('@elizaos-plugins/adapter-sqlite');
+        // @ts-ignore
+        const sqliteAdapterPlugin: any = await import('@elizaos-plugins/adapter-sqlite');
         const sqliteAdapterPluginDefault = sqliteAdapterPlugin.default;
         if (!sqliteAdapterPluginDefault || !sqliteAdapterPluginDefault.adapters || sqliteAdapterPluginDefault.adapters.length == 0) {
             throw new Error("Internal error: invalid plugin adapters");
