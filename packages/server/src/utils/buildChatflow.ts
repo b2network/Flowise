@@ -57,7 +57,7 @@ import {
 } from '../utils'
 import { validateChatflowAPIKey } from './validateKey'
 import logger from './logger'
-import { utilAddChatMessage } from './addChatMesage'
+import { utilAddChatMessage } from './addChatMessage'
 import { buildAgentGraph } from './buildAgentGraph'
 import { getErrorMessage } from '../errors/utils'
 import { FLOWISE_METRIC_COUNTERS, FLOWISE_COUNTER_STATUS, IMetricsProvider } from '../Interface.Metrics'

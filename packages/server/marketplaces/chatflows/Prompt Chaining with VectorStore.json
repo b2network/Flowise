@@ -167,7 +167,7 @@
                         "optional": true,
                         "placeholder": "75",
                         "step": 1,
-                        "description": "Minumum score for embeddings documents to be included",
+                        "description": "Minimum score for embeddings documents to be included",
                         "id": "vectorStoreToDocument_0-input-minScore-number"
                     }
                 ],
