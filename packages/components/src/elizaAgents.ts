@@ -42,7 +42,7 @@ The “action” field should be one of the options in [Available Actions] and t
 
 
 
-const messageHandlerTemplate =
+export const messageHandlerTemplate =
     // {{goals}}
     // "# Action Examples" is already included
     `{{ actionExamples }}
@@ -125,6 +125,43 @@ Given the recent messages, extract the following information about the requested
 
 Respond with a JSON markdown block containing only the extracted values.`;
 
+
+export async function createElizeAgent(characterJsonFile: string): Promise<AgentRuntime> {
+    let character = await loadCharacter(characterJsonFile)
+    character.id ??= stringToUuid(character.name);
+    character.username ??= character.name;
+
+    const token = getTokenForProvider(character.modelProvider, character);
+    if (!token) {
+        throw new Error("Token is undefined");
+    }
+    const runtime: AgentRuntime = await createAgent(
+        character,
+        token
+    );
+    let db: IDatabaseAdapter & IDatabaseCacheAdapter;
+    // initialize database
+    // find a db from the plugins
+    db = await findDatabaseAdapter(runtime);
+    runtime.databaseAdapter = db;
+
+    // initialize cache
+    const cache = initializeCache(
+        process.env.CACHE_STORE ?? CacheStore.DATABASE,
+        character,
+        process.env.CACHE_DIR ?? "",
+        db
+    ); // "" should be replaced with dir for file system caching. THOUGHTS: might probably make this into an env
+    runtime.cacheManager = cache;
+
+    // start services/plugins/process knowledge
+    await runtime.initialize();
+
+    // start assigned clients
+    runtime.clients = await initializeClients(character, runtime);
+
+    return runtime;
+}
 
 
 

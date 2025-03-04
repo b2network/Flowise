@@ -1,10 +1,7 @@
 // import { flatten } from 'lodash'
 import { getBaseClasses } from '../../../../src/utils'
-import { AgentExecutor, ToolCallingAgentOutputParser } from '../../../../src/agents'
+import { AgentExecutor } from '../../../../src/agents'
 import { b2Plugin } from "@elizaos-plugins/plugin-b2"
-import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
-import { AgentRuntime } from "@elizaos/core";
-import { sha1 } from "js-sha1";
 import {
     type Adapter,
     CacheStore,
@@ -37,12 +34,13 @@ import {
     findDatabaseAdapter,
     initializeCache,
     initializeClients,
-    transferTemplate
+    transferTemplate,
+    messageHandlerTemplate,
+    createElizeAgent
 } from '../../../../src/elizaAgents'
 import fs from "fs";
 import path from "path";
 import type { Address } from "viem";
-// import { defaultCharacter } from "./defaultCharacter";
 import {
     FlowiseMemory,
     ICommonObject,
@@ -53,7 +51,6 @@ import {
     IServerSideEventStreamer,
     IUsedTool
 } from '../../../../src/Interface'
-// import { startAgent } from "@elizaos/agent"
 
 class B2PluginFunctionAgent_Eliza_Agents implements INode {
     label: string
@@ -97,45 +94,8 @@ class B2PluginFunctionAgent_Eliza_Agents implements INode {
         const characterJsonFile = nodeData.inputs?.elizaAgentCharacterJsonFile as string
         const userId = stringToUuid("user");
         const roomId = stringToUuid("room");
-        let characters = await loadCharacter(characterJsonFile)
-        const character = characters
-        character.id ??= stringToUuid(character.name);
-        character.username ??= character.name;
-
-        const token = getTokenForProvider(character.modelProvider, character);
-        if (!token) {
-            throw new Error("Token is undefined");
-        }
-        console.log("----createAgent start------")
-        const runtime: AgentRuntime = await createAgent(
-            character,
-            token
-        );
-        let db: IDatabaseAdapter & IDatabaseCacheAdapter;
-        // initialize database
-        // find a db from the plugins
-        db = await findDatabaseAdapter(runtime);
-        runtime.databaseAdapter = db;
-
-        // initialize cache
-        const cache = initializeCache(
-            process.env.CACHE_STORE ?? CacheStore.DATABASE,
-            character,
-            process.env.CACHE_DIR ?? "",
-            db
-        ); // "" should be replaced with dir for file system caching. THOUGHTS: might probably make this into an env
-        runtime.cacheManager = cache;
-
-        // start services/plugins/process knowledge
-        await runtime.initialize();
-
-        // start assigned clients
-        runtime.clients = await initializeClients(character, runtime);
-
-        console.log("----createAgent end------")
-
+        let runtime = await createElizeAgent(characterJsonFile);
         console.log(`plugin name: ${b2Plugin.name}`)
-
         const content: Content = {
             text: input,
             source: "direct",
